@@ -2,20 +2,21 @@
 
 from sage.all import *
 import time
+import hashlib
+import random
 
-def test_falcon_m_forgery(trials=1000000, output_file="falcon_m_results.txt"):
+def test_falcon_m_forgery_retry(trials=10000, output_file="falcon_m_results.txt"):
     with open(output_file, "w") as f:
-
         def log(msg=""):
             print(msg)
             f.write(str(msg) + "\n")
             f.flush()
 
-        log("Initialization: n=512, q=12289, Delta=20, trials={}".format(trials))
+        retry_budgets = [0, 1, 5, 10, 20, 100, 500, 1000]
+        success_counts = {b: 0 for b in retry_budgets}
 
         q = 12289
         n = 512
-        delta = 20
         Zq = GF(q)
 
         g = Zq.multiplicative_generator()
@@ -26,18 +27,10 @@ def test_falcon_m_forgery(trials=1000000, output_file="falcon_m_results.txt"):
         inv_n = Zq(n)^-1
         INTT_mat = matrix(Zq, n, n, lambda i, j: inv_n * roots[j]^(-i))
 
-        def lift_centered(val):
-            v = Integer(val)
-            if v > q // 2:
-                v -= q
-            return v
-
-        success_count = 0
         invertible_count = 0
+        msg_base = b"Falcon-M Universal Forgery"
 
-        error_norms_invertible = []
-        error_norms_non_invertible = []
-        forgery_times = []
+        start_time = time.time()
 
         for trial_idx in range(trials):
             a = vector(Zq, [ZZ.random_element(-100, 100) for _ in range(n)])
@@ -51,50 +44,55 @@ def test_falcon_m_forgery(trials=1000000, output_file="falcon_m_results.txt"):
             if is_invertible:
                 invertible_count += 1
 
-            c_star = vector(Zq, [ZZ.random_element(0, q-1) for _ in range(n)])
-            C_freq = NTT_mat * c_star
+            min_salt_needed = -1
+            max_retry_limit = max(retry_budgets)
 
-            start_time = time.time()
+            for salt in range(max_retry_limit + 1):
+                data = msg_base + str(trial_idx).encode('utf-8') + str(salt).encode('utf-8')
+                digest = hashlib.sha512(data).digest()
+                local_rand = random.Random(digest)
 
-            Sigma_freq = []
-            for i in range(n):
-                if H_pk_freq[i] != 0:
-                    Sigma_freq.append(C_freq[i] / H_pk_freq[i])
-                else:
-                    Sigma_freq.append(Zq(0))
-            Sigma_freq = vector(Zq, Sigma_freq)
+                c_star = vector(Zq, [local_rand.randint(0, q-1) for _ in range(n)])
+                C_freq = NTT_mat * c_star
 
-            sigma_star = INTT_mat * Sigma_freq
-            end_time = time.time()
+                exact_cancellation = True
+                Sigma_freq = []
 
-            forgery_times.append((end_time - start_time) * 1000)
+                for i in range(n):
+                    if H_pk_freq[i] != Zq(0):
+                        Sigma_freq.append(C_freq[i] / H_pk_freq[i])
+                    else:
+                        Sigma_freq.append(Zq(0))
+                        if C_freq[i] != Zq(0):
+                            exact_cancellation = False
 
-            Y_freq = vector(Zq, [H_pk_freq[i] * Sigma_freq[i] for i in range(n)])
-            y_time = INTT_mat * Y_freq
+                if exact_cancellation:
+                    min_salt_needed = salt
+                    break
 
-            error_norm = max(abs(lift_centered(y_time[i] - c_star[i])) for i in range(n))
-            is_success = (error_norm <= delta)
+            if min_salt_needed != -1:
+                for b in retry_budgets:
+                    if min_salt_needed <= b:
+                        success_counts[b] += 1
 
-            if is_success:
-                success_count += 1
-
-            if is_invertible:
-                error_norms_invertible.append(error_norm)
-            else:
-                error_norms_non_invertible.append(error_norm)
+        end_time = time.time()
+        total_time = end_time - start_time
 
         inv_rate = float(invertible_count) / trials * 100
-        succ_rate = float(success_count) / trials * 100
-        avg_forgery_time = sum(forgery_times) / trials
-        max_err_inv = max(error_norms_invertible) if error_norms_invertible else 0
-        max_err_non_inv = max(error_norms_non_invertible) if error_norms_non_invertible else 0
 
-        log("\n--- Final Results ---")
+        log("\n--- Final Results (Modular Ring Exact Match) ---")
         log("Total Trials: {}".format(trials))
-        log("Fully Invertible PKs: {} ({:.2f}%)".format(invertible_count, inv_rate))
-        log("Successful Forgeries: {} ({:.2f}%)".format(success_count, succ_rate))
-        log("Avg Forgery Time: {:.4f} ms".format(avg_forgery_time))
-        log("Max L_inf Error (Inv): {}".format(max_err_inv))
-        log("Max L_inf Error (Non-Inv): {}".format(max_err_non_inv))
+        log("Simulation Time: {:.2f} s".format(total_time))
+        log("Fully Invertible PKs (0-retry success): {} ({:.2f}%)".format(invertible_count, inv_rate))
+        log("\n-------------------------------------------------------")
+        log("{:<25} | {}".format("Maximum Salt Retries", "Attack Success Rate"))
+        log("-------------------------------------------------------")
 
-test_falcon_m_forgery(1000000, "falcon_m_results.txt")
+        for b in sorted(retry_budgets):
+            succ_rate = float(success_counts[b]) / trials * 100
+            log("{:<25} | {:.2f}%".format(b, succ_rate))
+
+        log("-------------------------------------------------------")
+
+if __name__ == "__main__":
+    test_falcon_m_forgery_retry(1000000, "falcon_m_results.txt")
