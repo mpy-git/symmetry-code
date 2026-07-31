@@ -1,0 +1,18 @@
+# ==========================================
+# FM-HC-120 & Falcon-M Simulation Dependencies
+# ==========================================
+
+# The cryptographic simulations rely entirely on the SageMath mathematical software system.
+# Standard Python libraries used (pre-installed, no pip installation required):
+# - time
+# - hashlib
+# - random
+
+# Required Environment:
+# Please ensure SageMath is installed on your system.
+# Minimum tested version: SageMath 7.4 
+# Recommended version: SageMath 9.0 or higher (Python 3.x based)
+
+# Installation instructions for Debian/Ubuntu:
+# sudo apt-get update
+# sudo apt-get install sagemath
