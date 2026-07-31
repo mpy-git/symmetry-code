@@ -6,18 +6,16 @@ It provides the complete scripts to reproduce the cryptanalysis (universal forge
 
 ---
 
-## 📂 Repository Structure
+##  Repository Structure
 
 *   **`code1.sage`**: The SageMath script reproducing the 1,000,000-trial salt-search universal forgery attack against Falcon-M.
 *   **`code3.sage`**: The SageMath script evaluating the honest signature acceptance rate of Falcon-M, proving the functional correctness failure.
 *   **`code2.c`**: The C language implementation of the FM-HC-120 scheme, featuring the required hedged randomization and performance benchmarking against standard NIST PQC algorithms (Falcon-512, ML-DSA-44).
-*   **`api.h` & `params.h`**: Core cryptographic definitions and underlying FSwA parameter sets required for `code2.c`.
 *   **`test_vectors.txt`**: Standard Known Answer Tests (KATs) for FM-HC-120, providing fixed seed inputs and expected signature outputs for correct implementation verification.
-*   **`Makefile`**: Build instructions for the C benchmarks.
 
 ---
 
-## 🛠️ System Requirements & Dependencies
+##  System Requirements & Dependencies
 
 To ensure exact reproducibility, the experimental environments used in the paper are listed below.
 
@@ -33,6 +31,7 @@ The performance benchmarks utilize hardware-specific optimizations (e.g., AVX-51
 *   **Dependencies:** 
     *   OpenSSL (`libssl-dev`): Required for `shake256_hash` and `RAND_bytes`.
     *   liboqs (`liboqs-dev`): The Open Quantum Safe library, required for instantiating the baseline ML-DSA-44 and Falcon-512 benchmarking comparisons.
+    *   **HAETAE-120 Reference Implementation**: Since FM-HC-120 builds upon the HAETAE-120 core, `code2.c` requires the underlying NIST submission headers and source files to compile.
 
 **Ubuntu/Debian Installation for C dependencies:**
 ```bash
@@ -43,7 +42,7 @@ sudo apt-get install build-essential libssl-dev liboqs-dev
 
 ---
 
-## 🚀 Execution Instructions
+##  Execution Instructions
 
 ### 1. Reproducing the Falcon-M Forgery (Salt-Search Experiment)
 
@@ -67,34 +66,32 @@ sage code3.sage
 
 The FM-HC-120 implementation strictly integrates the **hedged randomization mechanism** during the signing phase. As detailed in `code2.c`, the masking seed is generated securely by hashing a combination of the secret key component, a 32-byte true random number (`rnd` via `RAND_bytes`), and the target message digest `mu`.
 
+**Compilation setup:** Place `code2.c` inside the root directory of the official HAETAE-120 reference implementation (which contains the `include/` and `src/` directories) to ensure proper linking of the cryptographic core.
+
 To compile and execute the benchmark:
 
 ```bash
-# Compile the C benchmark
-gcc code2.c -o benchmark -O3 -march=native -lcrypto -loqs -Wall
+# Compile the C benchmark alongside the HAETAE-120 underlying source files
+gcc -O3 -march=native -Wall -I./include code2.c $(find ./src -name "*.c" ! -name "rng.c") -o benchmark -lcrypto -loqs
 
-# Run the benchmark (Warning: Set iterations in code2.c as needed)
+# Run the benchmark
 ./benchmark
 
 ```
 
 ---
 
-## 🧪 Test Vectors (KAT)
+##  Test Vectors (KAT)
 
 To facilitate third-party verification of the FM-HC-120 algorithms, we provide deterministic test vectors. Please refer to the `test_vectors.txt` file in this repository. It includes hex-encoded outputs for:
 
-* `seed`: The initial entropy for key generation.
+* `seed`: The initial entropy for key generation (if fixed).
 * `pk`: The compressed public key (`pk_core` + `tr`).
 * `sk`: The secret key structure.
 * `m` & `ctx`: The target message and context string.
 * `sm`: The resulting signed message payload, ensuring the `UseHint` and high-bit recovery mechanisms function deterministically.
 
 ---
-
-## 📝 License
-
-This project is released under the MIT License. Please refer to the manuscript for theoretical definitions and security proofs.
 
 ```
 
