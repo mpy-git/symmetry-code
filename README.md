@@ -66,25 +66,6 @@ sage code3.sage
 
 ---
 
-## Theoretical Background
-
-Falcon‑M removes the NTRU trapdoor mechanism (\(fG - gF = q\)) to achieve lightweight performance. However, this causes the verification equation to degenerate into a **publicly solvable linear system**:
-
-\[
-\| \text{IFFT}(H_{pk}(\omega) \odot \Sigma(\omega)) - H(m) \|_{\infty} \leq \delta
-\]
-
-Since the only unknown is the signature polynomial, an adversary can perform **pointwise algebraic inversion** in the frequency domain:
-
-\[
-\Sigma(\omega) = C(\omega) \odot H_{pk}^{-1}(\omega)
-\]
-
-For invertible public keys (about \(91.99\%\) of cases under parameters \(n=512, q=12289\)), this yields a valid forgery with **zero residual error** and time complexity \(O(n \log n)\). For non‑invertible keys, a salt‑search strategy achieves existential forgery with expected \(q^k\) iterations.
-
-`code2.sage` implements this exact attack side‑by‑side with honest signing, providing a clear visual proof of the vulnerability.
-
----
 
 
 ## License
