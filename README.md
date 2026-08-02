@@ -1,5 +1,3 @@
----
-
 # Cryptanalysis of the Falcon‑M Signature Scheme
 
 This repository contains the companion source code for the paper:  
