@@ -5,6 +5,9 @@ import time
 import hashlib
 import random
 
+set_random_seed(12345)
+random.seed(12345)
+
 def test_falcon_m_forgery_retry(trials=10000, output_file="falcon_m_results.txt"):
     with open(output_file, "w") as f:
         def log(msg=""):
