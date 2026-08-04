@@ -3,7 +3,7 @@ import random
 import math
 
 set_random_seed(12345)
-random.seed(12345)
+random.seed(int(12345))
 
 def test_falcon_m_honest_signatures(trials=1000000, output_file="falcon_m_honest_results.txt"):
     q = 12289
