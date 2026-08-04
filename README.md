@@ -1,87 +1,110 @@
-# Cryptanalysis of the Falcon‑M Signature Scheme
+```markdown
+# Cryptanalysis of the Falcon-M Signature Scheme
 
 This repository contains the companion source code for the paper:  
-**"Cryptanalysis of the Falcon‑M Signature Scheme"** (to appear in *Symmetry*).
+**"Cryptanalysis of the Falcon-M Signature Scheme"** (to appear in *Symmetry*).
 
-It provides complete SageMath scripts to reproduce the attacks described in the paper, including the universal forgery via algebraic inversion and the salt‑search existential forgery, as well as a direct end‑to‑end demonstration of the structural flaw.
-
----
-
-## Repository Structure
-
-- **`code1.sage`** – Reproduces the **1,000,000‑trial salt‑search universal forgery attack** against Falcon‑M, outputting success rates for various retry budgets (matching Table 2 in the paper).
-- **`code2.sage`** – **End‑to‑end cryptanalysis test** that demonstrates:
-  - Honest signature generation (using exact discrete Gaussian sampling) **always fails** verification (zero acceptance rate).
-  - Universal forgery via pointwise algebraic division in the frequency domain **always succeeds** when the public key is fully invertible.
-- **`code3.sage`** – Independently evaluates the **honest signature acceptance rate** of Falcon‑M, confirming that the structural defect causes a 0% acceptance rate.
-- **`test_vectors.txt`** – Reserved for future Known Answer Tests (KAT) if a secure variant (e.g., FM‑HC‑120) is later provided; currently a placeholder.
+It provides complete SageMath scripts to reproduce the attacks described in the paper, including the universal forgery via algebraic inversion and the salt-search existential forgery, as well as a direct end-to-end demonstration of the structural flaw.
 
 ---
 
-## System Requirements & Dependencies
+## 1. Experimental Instantiation Details (Important Notes)
 
-All scripts are written in **SageMath** and have been tested under the following environment:
+### 1.1 Discrete Gaussian Sampling
+To strictly simulate the intended algorithmic behavior, honest signatures are generated using a precise Discrete Gaussian sampling procedure across all relevant scripts (`code2.sage` and `code3.sage`):
+- **Gaussian Parameter:** $\sigma = \delta / 3.0$ (where $\delta = 20$).
+- **Truncation Interval:** Strictly bounded to $[-\delta, \delta]$.
+- **Numerical Method:** Cumulative Distribution Function (CDF) inversion.
+- **Precision:** Standard 53-bit floating-point precision (IEEE 754) provided by Python's native math libraries.
 
-- **OS:** Debian 9.9 (or compatible)
-- **Software:** SageMath 7.4 (or later)
+
+### 1.2 Computational Complexity
+While the universal forgery is theoretically bounded by $\mathcal{O}(n \log n)$ via a fast Number Theoretic Transform (NTT), the scripts in this repository prioritize mathematical transparency. They utilize dense matrix multiplication to represent the NTT over the polynomial ring, operating at an actual empirical complexity of $\mathcal{O}(n^2)$. Optimizing for exact asymptotic performance requires specialized NTT implementations.
 
 ---
 
-## Execution Instructions
+## 2. Reproducibility & System Requirements
 
-### 1. Reproduce the Salt‑Search Forgery Attack (`code1.sage`)
+To ensure exact statistical reproducibility, all scripts utilize a fixed random seed (`set_random_seed(12345)` and `random.seed(12345)`). 
 
-Run the universal forgery simulation. Results will be written to `falcon_m_results.txt`.
+**Permanent Release / Commit Identifier:** 
+- Release Tag: `v2.0-Revision` 
 
+**Prerequisites:**
+- **OS:** Debian 9.9 (or compatible Linux environment)
+- **Software:** SageMath 7.4 (or later) utilizing Python 3.x
+
+---
+
+## 3. Execution Instructions
+
+The statistical invertibility experiments and end-to-end forgery demonstrations are clearly separated into distinct scripts.
+
+### 3.1 Reproduce the Salt-Search Forgery Attack (`code1.sage`)
+Evaluates the complete invertibility rate of public keys and calculates the expected search counts (retry budgets) for localized existential forgeries across 1,000,000 independent trials.
+
+**Exact Command:**
 ```bash
 sage code1.sage
+
 ```
 
-### 2. Run the End‑to‑End Vulnerability Demonstration (`code2.sage`)
+**Measured Runtime:** ~6.5 hours on an Intel Xeon Gold 6271C CPU (2.60 GHz) for 1,000,000 trials.
 
-This script performs the following steps:
+---
 
-- Generates a Falcon‑M key pair, forcing a **fully invertible** public key for clear attack demonstration.
-- Generates an **honest signature** using exact discrete Gaussian sampling and verifies it – expected to **reject**.
-- Constructs a **forged signature** via frequency‑domain algebraic division and verifies it – expected to **accept** with zero error.
+### 3.2 End-to-End Vulnerability Demonstration (`code2.sage`)
+
+A concrete, end-to-end evaluation that explicitly generates an honest signature (using exact discrete Gaussian noise) and a forged signature via algebraic division. **Crucially, both signatures are submitted to the exact same `Verify` function** to record the acceptance results.
+
+**Exact Command:**
 
 ```bash
 sage code2.sage
+
 ```
 
-Example output:
+**Example Output:**
 
 ```
 Honest: REJECT (error=6129)
 Forgery: ACCEPT (error=0)
+
 ```
 
-### 3. Evaluate Honest Signature Acceptance Rate (`code3.sage`)
+**Measured Runtime:** < 1 second.
 
-Runs a large number of honest signatures and outputs the acceptance rate to `falcon_m_honest_results.txt` (expected to be 0.00%).
+---
+
+### 3.3 Evaluate Honest Signature Acceptance Rate (`code3.sage`)
+
+Rigorously evaluates 1,000,000 honestly generated signatures (using the specified discrete Gaussian distribution) to empirically demonstrate the fundamental correctness failure of the scheme.
+
+**Exact Command:**
 
 ```bash
 sage code3.sage
+
 ```
 
----
+**Example Output (Excerpt):**
 
+```
+--- Final Results: Honest Signature Test ---
+Total Trials: 1000000
+Honest Acceptance Rate: 0.00% (Expected: negligible)
+Average Honest L_inf Error: 6128.55 (Expected: ~6144, Threshold: 20)
 
+```
 
-## License
-
-This repository is provided for academic and research purposes only. Please refer to the original paper for detailed licensing and attribution.
-
----
-
-## References
-
-> Zuo, L., Ma, P., Xu, S., Zhang, Z., & Zhao, Y. (2026). Cryptanalysis of the Falcon‑M Signature Scheme. *Symmetry*.
+**Measured Runtime:** ~3.1 hours on an Intel Xeon Gold 6271C CPU (2.60 GHz).
 
 ---
 
-## Contact
+## License & Contact
 
-For questions or issues regarding the code, please open an issue on this repository.
+This repository is provided for academic and research purposes only. Please refer to the original paper for detailed licensing and attribution. For questions or issues regarding the code, please open an issue on this repository.
 
----
+```
+
+```
