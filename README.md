@@ -1,8 +1,7 @@
-```markdown
 # Cryptanalysis of the Falcon-M Signature Scheme
 
 This repository contains the companion source code for the paper:  
-**"Cryptanalysis of the Falcon-M Signature Scheme"** (to appear in *Symmetry*).
+**"Cryptanalysis of the Falcon-M Signature Scheme"** 
 
 It provides complete SageMath scripts to reproduce the attacks described in the paper, including the universal forgery via algebraic inversion and the salt-search existential forgery, as well as a direct end-to-end demonstration of the structural flaw.
 
