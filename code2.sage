@@ -7,7 +7,7 @@ import math
 import time
 
 set_random_seed(12345)
-random.seed(12345)
+random.seed(int(12345))
 
 def run_end_to_end_test():
     q = 12289
